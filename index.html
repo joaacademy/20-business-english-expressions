@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Instinct, Not Instructions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0B0B0C;
+    --surface: #171719;
+    --surface-2: #1F1F22;
+    --gold: #C8A96E;
+    --gold-dim: #8f7a52;
+    --ink: #F3F1EC;
+    --ink-muted: #9B9691;
+    --line: rgba(255,255,255,0.08);
+    --radius: 14px;
+  }
+  *{ box-sizing: border-box; }
+  html, body{ background: var(--bg); height:100%; }
+  body{
+    margin:0; color: var(--ink); font-family: 'Noto Sans KR', sans-serif; line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    display:flex; flex-direction:column; height:100vh; overflow:hidden;
+  }
+  .en{ font-family: 'Inter', sans-serif; }
+
+  .progress-rail{ height:2px; background: rgba(255,255,255,0.06); flex-shrink:0; }
+  .progress-fill{ height:100%; width:0%; background: var(--gold); transition: width .3s ease; }
+
+  .viewport{ flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  .wrap{ max-width: 640px; margin: 0 auto; padding: 0 24px; }
+
+  /* SLIDES */
+  .slide{ display:none; min-height: 100%; }
+  .slide.active{ display:block; }
+
+  /* COVER */
+  .cover{ min-height: calc(100vh - 90px); display:flex; flex-direction:column; justify-content:center; padding: 60px 24px; }
+  .eyebrow{ font-family:'Inter',sans-serif; font-size:12px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); margin-bottom: 28px; font-weight:600; }
+  .cover h1{ font-family:'Inter',sans-serif; font-weight:800; font-size: clamp(30px, 6.5vw, 46px); line-height:1.18; margin: 0 0 20px 0; letter-spacing:-0.02em; }
+  .cover .kr-title{ font-size: clamp(18px,3.8vw,22px); font-weight:500; color: var(--ink); margin: 0 0 24px 0; }
+  .cover .sub{ color: var(--ink-muted); font-size:15.5px; max-width: 480px; font-weight:300; }
+  .cover .meta{ margin-top: 52px; display:flex; gap:28px; font-family:'Inter',sans-serif; font-size:12px; color: var(--ink-muted); letter-spacing:0.04em; }
+  .meta b{ color: var(--gold); font-weight:600; }
+
+  .block{ padding: 56px 0 40px 0; min-height: calc(100vh - 90px); }
+  .block-number{ font-family:'Inter',sans-serif; color: var(--gold-dim); font-size:12.5px; font-weight:600; letter-spacing:0.1em; margin-bottom:10px; text-transform:uppercase; }
+  .block h2{ font-size: clamp(21px,4.2vw,26px); margin: 0 0 14px 0; font-weight:700; }
+  .block h2 .en-tag{ display:block; font-family:'Inter',sans-serif; font-size:12.5px; font-weight:600; color: var(--ink-muted); letter-spacing:0.06em; margin-top:6px; text-transform:none; }
+
+  .note-strip{ background: rgba(200,169,110,0.07); border-left:2px solid var(--gold); padding: 15px 20px; border-radius: 6px; font-size:13.5px; color: var(--ink-muted); margin-bottom: 28px; font-weight:300; }
+
+  /* MOMENT / SCENE */
+  .moment{ margin-bottom: 44px; }
+  .moment:last-child{ margin-bottom: 0; }
+  .scene-box{ background: var(--surface); border-left: 2px solid var(--gold-dim); padding: 20px 22px; border-radius: 6px; margin-bottom: 22px; }
+  .scene-label{ font-family:'Inter',sans-serif; font-size:10.5px; letter-spacing:0.16em; text-transform:uppercase; color: var(--gold-dim); font-weight:700; margin-bottom:10px; }
+  .scene-text{ font-size:15px; color: var(--ink); font-weight:400; }
+
+  .instinct-prompt{ font-family:'Noto Sans KR',sans-serif; font-size:13px; color: var(--gold); font-weight:500; margin-bottom:16px; letter-spacing:0.01em; }
+
+  .option{ border:1px solid var(--line); border-radius:10px; margin-bottom:10px; cursor:pointer; background: var(--surface); transition: border-color .2s ease, background .2s ease; overflow:hidden; }
+  .option.open{ border-color: rgba(200,169,110,0.4); background: var(--surface-2); }
+  .option-head{ display:flex; align-items:center; justify-content:space-between; padding:16px 20px; gap:12px; }
+  .option-phrase{ font-family:'Inter',sans-serif; font-size:16.5px; color: var(--ink); font-weight:600; }
+  .option-chevron{ flex-shrink:0; width:16px; height:16px; color: var(--ink-muted); transition: transform .25s ease; }
+  .option.open .option-chevron{ transform: rotate(180deg); color: var(--gold); }
+
+  .option-reveal-wrap{ display:grid; grid-template-rows: 0fr; transition: grid-template-rows .35s ease; }
+  .option.open .option-reveal-wrap{ grid-template-rows: 1fr; }
+  .option-reveal-inner{ overflow:hidden; }
+  .option-reveal{ padding: 0 20px 20px 20px; }
+  .register-tag{ display:inline-block; font-family:'Inter',sans-serif; font-size:11px; letter-spacing:0.08em; text-transform:uppercase; color: var(--gold); font-weight:700; margin-bottom:10px; padding-top:12px; border-top:1px solid var(--line); }
+  .reasoning{ font-size:14px; color: var(--ink-muted); font-weight:300; margin-bottom:12px; }
+  .example{ font-family:'Inter',sans-serif; font-size:14px; color:#d8c9a3; font-style: italic; font-weight:400; }
+  .example::before{ content:"“"; } .example::after{ content:"”"; }
+
+  .single-note{ font-size:12.5px; color: var(--ink-muted); font-weight:300; margin-top:-10px; margin-bottom:16px; font-style:italic; }
+
+  /* FINAL / OFFER */
+  .final{ padding: 60px 0 60px 0; text-align:center; min-height: calc(100vh - 90px); display:flex; flex-direction:column; justify-content:center; }
+  .final .kicker{ font-family:'Inter',sans-serif; color: var(--gold); font-size:12.5px; letter-spacing:0.15em; text-transform:uppercase; font-weight:700; margin-bottom:20px; }
+  .final h2{ font-size: clamp(22px,4.5vw,28px); margin: 0 0 16px 0; font-weight:700; }
+  .final p.bridge{ color: var(--ink-muted); font-size:15.5px; max-width:460px; margin:0 auto 36px auto; font-weight:300; }
+  .checklist{ text-align:left; max-width: 380px; margin: 0 auto 40px auto; }
+  .checklist div{ display:flex; gap:12px; margin-bottom:13px; font-size:14.5px; color: var(--ink); }
+  .checklist div .en{ color: var(--ink-muted); font-size:12.5px; display:block; margin-top:2px; }
+  .checklist .mark{ color: var(--gold-dim); flex-shrink:0; }
+
+  .offer-card{ background: var(--surface); border:1px solid rgba(200,169,110,0.25); border-radius: 16px; padding: 38px 30px; max-width: 420px; margin: 0 auto; }
+  .offer-card .course-name{ font-weight:700; font-size:19px; margin-bottom:6px; }
+  .offer-card .course-sub{ color: var(--ink-muted); font-size:13px; margin-bottom: 24px; font-weight:300; }
+  .price-row{ display:flex; align-items:baseline; justify-content:center; gap:14px; margin-bottom:8px; }
+  .price-old{ font-family:'Inter',sans-serif; color: var(--ink-muted); text-decoration: line-through; font-size:17px; }
+  .price-new{ font-family:'Inter',sans-serif; color: var(--gold); font-size:34px; font-weight:800; }
+  .price-note{ font-size:12px; color: var(--ink-muted); margin-bottom:26px; font-weight:300; }
+  .cta-btn{ display:block; width:100%; padding:15px; border-radius:9px; border:1px solid rgba(200,169,110,0.4); background: transparent; color: var(--gold); font-family:'Inter',sans-serif; font-weight:600; font-size:14.5px; cursor:pointer; letter-spacing:0.01em; transition: background .2s ease, color .2s ease; text-align:center; text-decoration:none; box-sizing:border-box; position:relative; overflow:hidden; }
+  .cta-btn:hover{ background: var(--gold); color:#111; }
+  .cta-btn.shiny{ background: linear-gradient(90deg, rgba(200,169,110,0.12), rgba(200,169,110,0.22), rgba(200,169,110,0.12)); border-color: rgba(200,169,110,0.55); color: var(--gold); }
+  .cta-btn.shiny:hover{ background: var(--gold); color:#111; }
+  .cta-btn.shiny span.shine-sweep{ position:absolute; top:0; left:-60%; width:40%; height:100%; background: linear-gradient(120deg, transparent, rgba(255,255,255,0.55), transparent); transform: skewX(-20deg); animation: shineSweep 3.2s ease-in-out infinite; pointer-events:none; }
+  .cta-btn.shiny .cta-label{ position:relative; z-index:1; }
+  @keyframes shineSweep{ 0%{ left:-60%; } 55%{ left:130%; } 100%{ left:130%; } }
+  .offer-desc{ color: var(--ink-muted); font-size:14px; font-weight:300; margin-bottom:12px; }
+  .offer-desc2{ color: var(--ink-muted); font-size:14px; font-weight:300; margin-bottom:22px; }
+  .offer-note{ font-size:12.5px; color: var(--ink-muted); font-weight:300; font-style:italic; margin: -8px 0 22px 0; }
+
+  footer{ text-align:center; padding: 28px 24px 40px 24px; color: var(--ink-muted); font-size:12px; font-family:'Inter',sans-serif; }
+  .footer-brand{ font-weight:700; color: var(--ink); font-size:13px; margin-bottom:4px; }
+  .footer-tagline{ margin-bottom:10px; }
+  .footer-email{ font-family:'Inter',sans-serif; margin-bottom:10px; }
+  .footer-copyright{ font-size:11px; opacity:0.7; }
+
+  .offer-includes{ list-style:none; padding:0; margin: 0 0 28px 0; text-align:left; }
+  .offer-includes li{ font-size:13.5px; color: var(--ink-muted); font-weight:300; padding: 9px 0; border-bottom:1px solid var(--line); }
+  .offer-includes li:last-child{ border-bottom:none; }
+  .offer-includes li::before{ content:"·"; color: var(--gold); margin-right:10px; font-weight:700; }
+
+  /* NAV BAR */
+  .navbar{
+    flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
+    padding: 14px 24px; background: var(--surface); border-top: 1px solid var(--line);
+    gap: 16px;
+  }
+  .nav-btn{
+    font-family:'Inter',sans-serif; font-size:14px; font-weight:600; letter-spacing:0.01em;
+    padding: 12px 22px; border-radius: 9px; cursor:pointer; border:1px solid var(--line);
+    background: transparent; color: var(--ink); transition: border-color .2s ease, background .2s ease, opacity .2s ease;
+    display:flex; align-items:center; gap:8px;
+  }
+  .nav-btn:hover{ border-color: rgba(200,169,110,0.4); }
+  .nav-btn.primary{ background: var(--gold); color:#111; border-color: var(--gold); }
+  .nav-btn.primary:hover{ opacity:0.9; }
+  .nav-btn:disabled{ opacity:0.3; cursor:default; pointer-events:none; }
+  .nav-btn svg{ width:14px; height:14px; }
+
+  .step-dots{ display:flex; gap:6px; }
+  .step-dots span{ width:6px; height:6px; border-radius:50%; background: var(--line); transition: background .2s ease, transform .2s ease; }
+  .step-dots span.active{ background: var(--gold); transform: scale(1.3); }
+  .step-dots{ display:none; }
+  @media (min-width: 560px){ .step-dots{ display:flex; } }
+
+  @media (max-width: 480px){
+    .cover{ padding: 40px 20px; }
+    .block{ padding: 40px 0 24px 0; }
+    .navbar{ padding: 12px 16px; }
+    .nav-btn{ padding: 11px 16px; font-size:13px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-rail"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="viewport" id="viewport">
+  <div class="wrap">
+
+    <!-- SLIDE 0: COVER -->
+    <div class="slide active" data-slide="0">
+      <div class="cover">
+        <div class="eyebrow">Situational Judgment · English Joa Academy</div>
+        <h1 class="en">Instinct, Not Instructions</h1>
+        <p class="kr-title">6가지 업무 상황, 당신의 영어 본능을 점검합니다</p>
+        <p class="sub">정답은 없습니다. 각 상황에서 자연스럽게 떠오르는 표현들을 눌러 살펴보고, 그 표현이 어떤 느낌과 관계를 만드는지 확인해 보세요.</p>
+        <div class="meta">
+          <div><b>6</b> Situations</div>
+          <div><b>21</b> Reveals</div>
+          <div><b>15</b> Min Read</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 1: INTRO -->
+    <div class="slide" data-slide="1">
+      <div class="block">
+        <div class="block-number">Before We Start</div>
+        <h2>표현을 외우는 게 아니라<span class="en-tag">This isn't about memorizing the right line</span></h2>
+        <p style="color:var(--ink-muted); font-weight:300; font-size:15px;">대부분의 한국 전문가들은 영어를 몰라서 주저하는 게 아닙니다. 머릿속에서 이미 완벽한 문장을 찾고 있기 때문에 반응이 늦어지는 경우가 더 많습니다.</p>
+        <p style="color:var(--ink-muted); font-weight:300; font-size:15px;">아래 상황들에는 정답이 없습니다. 여러 표현이 동시에 &lsquo;맞을&rsquo; 수 있습니다 — 다만 서로 다른 관계, 다른 온도를 만들 뿐입니다. 하나씩 눌러 그 차이를 느껴보세요.</p>
+      </div>
+    </div>
+
+    <!-- SLIDES 2-7: SITUATIONS injected by JS -->
+    <div id="situationSlides"></div>
+
+    <!-- SLIDE 8: FINAL -->
+    <div class="slide" data-slide="8">
+      <div class="final">
+        <div class="kicker">One More Step</div>
+        <h2 class="en">Instinct sharpens with pattern.</h2>
+        <p class="bridge">오늘 살펴본 건 표현이 아니라, 상황을 읽는 감각이었습니다. 실제 대화는 이보다 훨씬 빠르고, 훨씬 예측 불가능하게 흘러갑니다.</p>
+        <div class="checklist">
+          <div><span class="mark">·</span><div>회의를 이끄는 법<span class="en">Leading meetings in English</span></div></div>
+          <div><span class="mark">·</span><div>생각을 명확하게 설명하는 법<span class="en">Explaining ideas with clarity</span></div></div>
+          <div><span class="mark">·</span><div>자신 있게 발표하는 법<span class="en">Presenting with authority</span></div></div>
+          <div><span class="mark">·</span><div>전문적으로 협상하는 법<span class="en">Negotiating professionally</span></div></div>
+          <div><span class="mark">·</span><div>압박 속에서 침착하게 소통하는 법<span class="en">Communicating under pressure</span></div></div>
+          <div><span class="mark">·</span><div>국제 고객과 신뢰를 쌓는 법<span class="en">Building trust with global clients</span></div></div>
+        </div>
+        <div class="offer-card">
+          <div class="course-name">15분 무료 Clarity Call</div>
+          <div class="offer-desc">오늘 내용을 읽으면서 궁금한 점이 있으셨나요?</div>
+          <div class="offer-desc2">혼자 고민하지 마세요. 15분 동안 함께 이야기하며 현재 상황을 정리하고, 가장 효과적인 학습 방향을 찾아드립니다.</div>
+          <ul class="offer-includes">
+            <li>업무 영어 고민</li>
+            <li>자주 막히는 표현이나 상황</li>
+            <li>나에게 맞는 학습 방향</li>
+          </ul>
+          <a class="cta-btn shiny en" id="callCtaBtn" href="https://tidycal.com/joaacademy/clarity-call" target="_blank" rel="noopener"><span class="shine-sweep"></span><span class="cta-label">무료 Clarity Call 예약하기 →</span></a>
+        </div>
+      </div>
+      <footer>
+        <div class="footer-brand">English Joa Academy</div>
+        <div class="footer-tagline">Speak With Authority, Not Translation</div>
+        <div class="footer-email">info@joaacademy.com</div>
+        <div class="footer-copyright">© 2026 English Joa Academy · All rights reserved.</div>
+      </footer>
+    </div>
+
+  </div>
+</div>
+
+<div class="navbar">
+  <button class="nav-btn" id="backBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    이전
+  </button>
+  <div class="step-dots" id="stepDots"></div>
+  <button class="nav-btn primary" id="nextBtn">
+    다음
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+  </button>
+</div>
+
+<script>
+const sections = [
+  {
+    num: "Situation 01", kr: "대화 시작하기", en: "Starting Conversations", note: null,
+    moments: [
+      {
+        scene: "화상 회의에 접속했다. 다들 화면은 켜져 있는데, 서로 조용히 얼굴만 보고 있다. 누군가는 먼저 말을 꺼내야 하는 순간, 오늘은 그게 당신이다.",
+        options: [
+          { phrase:"How's your week going?", register:"편안한 동료 사이", reasoning:"형식적인 안부보다 그 주의 실제 상황에 관심을 보여, 자연스럽게 다음 대화로 이어지는 문장입니다. 처음 몇 초의 어색함을 가장 부드럽게 넘깁니다.", example:"How's your week going? Busy with the launch?" },
+          { phrase:"Good to see you again.", register:"몇 번 만난 파트너·고객", reasoning:"이미 아는 사이라는 걸 자연스럽게 드러내며, 관계가 이어지고 있다는 신호를 줍니다. 첫 만남이 아니라는 걸 굳이 설명할 필요가 없어집니다.", example:"Good to see you again — it's been a while." },
+          { phrase:"Thanks for making the time today.", register:"격식 있는 자리, 윗사람과의 미팅", reasoning:"본론에 들어가기 전 상대방의 시간을 먼저 존중하는 표현입니다. 격식이 필요한 자리에서 신뢰감 있게 대화를 열어줍니다.", example:"Thanks for making the time today, I know you're busy." }
+        ]
+      }
+    ]
+  },
+  {
+    num: "Situation 02", kr: "생각할 시간 벌기", en: "Buying Yourself Thinking Time",
+    note: "한국인 화자에게 특히 중요한 구간입니다. 침묵 자체가 문제는 아닙니다 — 다만 침묵이 길어지면 &lsquo;생각 중&rsquo;이라는 신호를 따로 줄 필요가 있을 뿐입니다.",
+    moments: [
+      {
+        scene: "회의 중 예상하지 못한 질문을 받았다. 좋은 답이 아직 정리되지 않았는데, 침묵이 길어지면 자신 없어 보일 것 같아 조급해진다.",
+        options: [
+          { phrase:"That's a great question.", register:"답을 정리할 시간이 조금 더 필요할 때", reasoning:"침묵 대신 자연스러운 다리를 놓아주는 문장입니다. 원어민도 실제로 생각할 시간이 필요할 때 똑같이 씁니다 — 이 말 자체가 이미 답의 일부입니다.", example:"That's a great question — let me think about that for a second." },
+          { phrase:"Let me think about that for a second.", register:"짧고 솔직하게", reasoning:"생각 중이라는 걸 있는 그대로 말하는 방식입니다. 숨기지 않고 밝히는 태도가 오히려 신중하다는 인상을 줍니다.", example:"Let me think about that for a second before I answer." },
+          { phrase:"Let me explain what I mean.", register:"방금 한 말을 다시 정리하고 싶을 때", reasoning:"답이 바로 안 나올 때, 앞서 한 말을 다시 짚으며 생각을 정리할 시간을 벌어줍니다.", example:"Let me explain what I mean by that." },
+          { phrase:"From my perspective…", register:"확정된 답이 아니라 의견임을 밝히고 싶을 때", reasoning:"지금 하려는 말이 정답이 아니라 하나의 관점이라는 걸 먼저 알려, 부담 없이 말을 이어갈 수 있게 해줍니다.", example:"From my perspective, the timeline looks tight." }
+        ]
+      }
+    ]
+  },
+  {
+    num: "Situation 03", kr: "자연스럽게 동의하기", en: "Agreeing Naturally", note: null,
+    moments: [
+      {
+        scene: "동료가 회의에서 낸 아이디어가 정말 마음에 든다. 형식적인 대답이 아니라, 진심으로 동의한다는 걸 전하고 싶다.",
+        options: [
+          { phrase:"Absolutely.", register:"짧고 확신 있게", reasoning:"단순한 동의가 아니라 확신을 담아 전달되는 표현입니다. 대화에 에너지를 더하면서도 격식을 잃지 않습니다.", example:"Absolutely, that makes sense." },
+          { phrase:"I couldn't agree more.", register:"적극적으로 공감할 때", reasoning:"상대방의 의견에 강하게 공감하고 있다는 걸 보여주는 표현입니다. 회의 분위기를 밀어주는 역할을 합니다.", example:"I couldn't agree more with that point." },
+          { phrase:"That's exactly what I was thinking.", register:"같은 생각이었다는 걸 드러내고 싶을 때", reasoning:"단순 동의를 넘어, 같은 생각을 하고 있었다는 걸 알려 관계를 더 가깝게 만듭니다.", example:"That's exactly what I was thinking too." },
+          { phrase:"Good point.", register:"짧고 자연스럽게, 회의 중", reasoning:"짧지만 상대방의 발언을 인정한다는 신호로, 회의 흐름 속에서 자연스럽게 스며드는 표현입니다.", example:"Good point — let's factor that in." }
+        ]
+      }
+    ]
+  },
+  {
+    num: "Situation 04", kr: "전문적으로 반대하기", en: "Disagreeing Professionally",
+    note: "한국어 대화에서는 위계와 맥락으로 반대 의견을 부드럽게 전달하지만, 그 말을 영어로 그대로 옮기면 오히려 더 단호하고 직설적으로 들릴 수 있습니다.",
+    moments: [
+      {
+        scene: "팀장이 제안한 일정에 무리가 있다고 생각한다. 다른 의견을 말하고 싶지만, 정면으로 부딪히는 사람처럼 보이고 싶지는 않다.",
+        options: [
+          { phrase:"I see your point, but…", register:"의견을 먼저 인정한 뒤 다르게 말할 때", reasoning:"상대 의견을 먼저 인정한 뒤 다른 관점을 제시해, 반박이 아니라 대화로 느껴지게 합니다.", example:"I see your point, but I think the timeline might be too tight." },
+          { phrase:"Another way to look at it is…", register:"틀렸다가 아니라 다른 시각을 제안할 때", reasoning:"'틀렸다'가 아니라 '다른 시각'을 제안하는 프레이밍으로, 상대의 체면을 지켜주면서도 분명하게 의견을 전달합니다.", example:"Another way to look at it is from the client's side." },
+          { phrase:"That's true. At the same time…", register:"완충 작용이 필요한 자리에서", reasoning:"상대 말의 일부를 먼저 인정해, 뒤이어 오는 반대 의견이 공격처럼 들리지 않게 완충 역할을 합니다.", example:"That's true. At the same time, we should consider the budget." }
+        ]
+      }
+    ]
+  },
+  {
+    num: "Situation 05", kr: "더 나은 질문하기", en: "Asking Better Questions", note: null,
+    moments: [
+      {
+        scene: "회의 중 궁금한 게 생겼다. 흐름을 끊고 싶지 않아 망설여지지만, 지금 묻지 않으면 나중에 더 헷갈릴 것 같다.",
+        singleNote: "이 순간엔 대체로 하나의 표현이 자연스럽게 자리를 잡습니다 — 왜 그런지 살펴보세요.",
+        options: [
+          { phrase:"I have a quick question.", register:"끼어들기 전 부담을 낮추고 싶을 때", reasoning:"'quick'이라는 한 단어가 질문하기 전 심리적 장벽을 낮춰줍니다. 흐름을 오래 끊지 않겠다는 신호이기도 합니다.", example:"I have a quick question about today's deadline." }
+        ]
+      },
+      {
+        scene: "상대방이 빠르게 설명했고, 절반쯤 놓쳤다. 다시 물어보고 싶지만 무능해 보일까 봐 망설여진다.",
+        options: [
+          { phrase:"Could you clarify that?", register:"짧고 직접적으로, 부담 없이", reasoning:"이해하지 못했다는 걸 부담 없이 알릴 수 있는 가장 안전한 표현입니다.", example:"Could you clarify that last point?" },
+          { phrase:"Could you walk me through that?", register:"전체 과정이나 논리를 다시 듣고 싶을 때", reasoning:"부분이 아니라 전체 흐름을 다시 설명해달라고 요청할 때 자연스럽습니다.", example:"Could you walk me through that process again?" },
+          { phrase:"Just to make sure I understood correctly…", register:"신중하게, 오해를 미리 방지하고 싶을 때", reasoning:"오해를 방지하면서도, 신중하게 확인하는 사람이라는 인상을 줍니다.", example:"Just to make sure I understood correctly, we're launching in July?" }
+        ]
+      }
+    ]
+  },
+  {
+    num: "Situation 06", kr: "대화 마무리하기", en: "Ending Conversations", note: null,
+    moments: [
+      {
+        scene: "미팅이 끝나가고 있다. 어떤 말로 마무리하느냐에 따라 다음 관계가 달라질 것 같다는 느낌이 든다.",
+        options: [
+          { phrase:"Thanks for your time.", register:"정중하고 기본적으로", reasoning:"대화를 정중하게 마무리하는 가장 기본적인 표현입니다. 어떤 관계에서도 무난하게 쓸 수 있습니다.", example:"Thanks for your time today." },
+          { phrase:"I'll follow up after the meeting.", register:"다음 행동을 명확히 하고 싶을 때", reasoning:"다음 행동을 명확히 알려, 신뢰감 있게 대화를 끝맺습니다.", example:"I'll follow up with the notes after the meeting." },
+          { phrase:"Looking forward to working together.", register:"관계가 계속 이어지길 바랄 때", reasoning:"관계가 여기서 끝나지 않는다는 걸 전달하는 표현입니다.", example:"Looking forward to working together on this." },
+          { phrase:"Let's keep in touch.", register:"격식과 친근함 사이, 자연스럽게", reasoning:"격식과 친근함 사이에서 자연스럽게 관계를 이어가는 문장입니다.", example:"Let's keep in touch — I'll email you next week." }
+        ]
+      }
+    ]
+  }
+];
+
+const situationSlidesContainer = document.getElementById('situationSlides');
+let optionCounter = 0;
+
+sections.forEach((sec, si) => {
+  const slideDiv = document.createElement('div');
+  slideDiv.className = 'slide';
+  slideDiv.dataset.slide = String(si + 2); // slides 2..7
+
+  let momentsHTML = '';
+  sec.moments.forEach((m) => {
+    let optionsHTML = '';
+    m.options.forEach((o) => {
+      const id = 'opt-' + (optionCounter++);
+      optionsHTML += `
+        <div class="option" id="${id}">
+          <div class="option-head">
+            <span class="option-phrase en">${o.phrase}</span>
+            <svg class="option-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
+          <div class="option-reveal-wrap">
+            <div class="option-reveal-inner">
+              <div class="option-reveal">
+                <span class="register-tag">${o.register}</span>
+                <div class="reasoning">${o.reasoning}</div>
+                <div class="example en">${o.example}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    momentsHTML += `
+      <div class="moment">
+        <div class="scene-box">
+          <div class="scene-label">Scene</div>
+          <div class="scene-text">${m.scene}</div>
+        </div>
+        <div class="instinct-prompt">이 상황에서 당신의 본능은?</div>
+        ${m.singleNote ? `<div class="single-note">${m.singleNote}</div>` : ''}
+        ${optionsHTML}
+      </div>
+    `;
+  });
+
+  slideDiv.innerHTML = `
+    <div class="block">
+      <div class="block-number">${sec.num}</div>
+      <h2>${sec.kr}<span class="en-tag">${sec.en}</span></h2>
+      ${sec.note ? `<div class="note-strip">${sec.note}</div>` : ''}
+      ${momentsHTML}
+    </div>
+  `;
+  situationSlidesContainer.appendChild(slideDiv);
+});
+
+document.querySelectorAll('.option').forEach(opt => {
+  opt.addEventListener('click', () => opt.classList.toggle('open'));
+});
+
+// ---- PAGINATION ----
+const TOTAL_SLIDES = 9; // 0 cover, 1 intro, 2-7 situations, 8 final
+let current = 0;
+
+const backBtn = document.getElementById('backBtn');
+const nextBtn = document.getElementById('nextBtn');
+const progressFill = document.getElementById('progressFill');
+const stepDots = document.getElementById('stepDots');
+const viewport = document.getElementById('viewport');
+
+for (let i = 0; i < TOTAL_SLIDES; i++) {
+  const dot = document.createElement('span');
+  if (i === 0) dot.className = 'active';
+  stepDots.appendChild(dot);
+}
+
+function renderSlide() {
+  document.querySelectorAll('.slide').forEach(s => {
+    s.classList.toggle('active', Number(s.dataset.slide) === current);
+  });
+  backBtn.disabled = current === 0;
+  nextBtn.innerHTML = current === TOTAL_SLIDES - 1
+    ? '무료 Clarity Call 예약하기 →'
+    : '다음 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>';
+  progressFill.style.width = ((current + 1) / TOTAL_SLIDES * 100) + '%';
+  [...stepDots.children].forEach((d, i) => d.classList.toggle('active', i === current));
+  viewport.scrollTop = 0;
+}
+
+backBtn.addEventListener('click', () => {
+  if (current > 0) { current--; renderSlide(); }
+});
+nextBtn.addEventListener('click', () => {
+  if (current === TOTAL_SLIDES - 1) {
+    window.open('https://tidycal.com/joaacademy/clarity-call', '_blank', 'noopener');
+    return;
+  }
+  if (current < TOTAL_SLIDES - 1) { current++; renderSlide(); }
+});
+
+renderSlide();
+</script>
+
+</body>
+</html>
